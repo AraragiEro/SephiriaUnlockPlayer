@@ -4,23 +4,30 @@
 
 ## 快速开始
 
-**双击 `build.bat`**，自动完成：检测游戏路径 → 编译 → 部署。
+```powershell
+cd SephiriaUnlocker
+.\deploy.ps1
+```
 
-首次运行会自动扫描所有盘符寻找游戏目录。如果找不到，编辑 `SephiriaUnlocker\GamePath.props` 填入你的游戏路径即可。
+脚本自动完成：检测游戏路径 → 获取 HarmonyX → 编译 → 部署。
+
+**无需手动下载依赖 DLL。** 脚本会自动从以下来源获取 `0Harmony.dll`：
+1. 优先从已安装的 SephiriaReconnect 获取（同版本，避免冲突）
+2. 否则从 NuGet 下载 HarmonyX v2.16.1（独立版，无需其他依赖）
+
+如果自动检测游戏路径失败，编辑 `GamePath.props` 或使用 `-GamePath` 参数指定。
 
 ## 安装（手动）
 
-将以下文件放入 `<游戏目录>\AddOns\SephiriaUnlocker\`：
+将以下 **3 个文件**放入 `<游戏目录>\AddOns\SephiriaUnlocker\`：
 
 | 文件 | 说明 |
 |------|------|
-| `metadata.json` | AddOn 元数据 |
+| `metadata.json` | AddOn 元数据（自动生成） |
 | `SephiriaUnlocker.dll` | 主 Mod（编译产出） |
-| `0Harmony.dll` | HarmonyX 运行时 |
-| `MonoMod.*.dll` | MonoMod 依赖（约6个文件） |
-| `Mono.Cecil.dll` | IL 操作库 |
+| `0Harmony.dll` | HarmonyX 运行时（脚本自动获取） |
 
-**Mod 文件夹**中已包含所有依赖 DLL。如果从 GitHub 下载，直接复制 `SephiriaUnlocker/` 到 `AddOns/` 即可。
+> 如果你也安装了 SephiriaReconnect，仅需 `SephiriaUnlocker.dll` + `metadata.json` 即可——两个 Mod 共用同一个 `0Harmony.dll`。
 
 ## 配置
 
@@ -32,33 +39,28 @@
 - [.NET SDK 8.0+](https://dotnet.microsoft.com/download)
 - Sephiria 游戏已安装
 
-### 步骤
-
-**方式一：一键脚本**
-```bat
-build.bat
+### 一键脚本
+```powershell
+cd SephiriaUnlocker
+.\deploy.ps1
 ```
+自动：检测路径 → 获取 HarmonyX → 编译 → 部署。
 
-**方式二：手动**
-1. 编辑 `SephiriaUnlocker\GamePath.props`，设置 `<SephiriaGamePath>` 为你的游戏目录
-2. 放入依赖 DLL 到 `libs\`（从下方来源获取）
-3. 编译：
-   ```bat
+### 手动步骤
+1. 编辑 `GamePath.props`，设置 `<SephiriaGamePath>`
+2. 编译：
+   ```powershell
    cd SephiriaUnlocker
    dotnet build -c Release
    ```
-4. 将 `bin\Release\netstandard2.1\SephiriaUnlocker.dll` 复制到 `AddOns\SephiriaUnlocker\`
+3. 复制到 AddOns：
+   ```powershell
+   Copy-Item bin\Release\netstandard2.1\SephiriaUnlocker.dll <游戏>\AddOns\SephiriaUnlocker\ -Force
+   ```
+4. 获取 `0Harmony.dll`（从已安装的 SephiriaReconnect 复制，或从 NuGet 下载 HarmonyX v2.16.1）
 
-### 依赖 DLL 来源
-从 [BepInEx 5.4.23 发行包](https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.5/BepInEx_win_x64_5.4.23.5.zip) 的 `BepInEx/core/` 目录提取以下文件到 `libs/`：
-- `0Harmony.dll`
-- `MonoMod.RuntimeDetour.dll`
-- `MonoMod.Utils.dll`
-- `Mono.Cecil.dll`
-- `Mono.Cecil.Mdb.dll`
-- `Mono.Cecil.Pdb.dll`
-
-> 注意：无需安装 BepInEx，只需提取这些 DLL。
+### 依赖说明
+本项目唯一的外部依赖是 **HarmonyX**（`0Harmony.dll`），源码中**不包含**此文件。部署时由 `deploy.ps1` 自动获取。编译时从 `libs\0Harmony.dll` 引用——你可从任一来源复制一份到此目录。
 
 ## 卸载
 
@@ -76,5 +78,5 @@ build.bat
 | 组件 | 文件 | 作用 |
 |------|------|------|
 | AddOn 入口 | `SephiriaUnlockerMod.cs` | 继承 `HorayModBase`，游戏自动加载 |
-| UI 扩展 | `Patches/UIPatches.cs` | 扩展成员选择器 2-4 → 2-16 |
-| 网络层 | `Patches/MirrorPatches.cs` | 设置 `maxConnections=16` |
+| 最大连接数 | `Patches/MirrorPatches.cs` | 传输层监控 + `maxConnections=16` |
+| 选择器 | `SephiriaUnlockerMod.cs` | 修改 `Options.AllowedMultiplayerMember = 16` |
