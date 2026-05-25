@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sephiria 游戏路径配置 — 修改为你实际的游戏安装目录 -->
+<Project>
+  <PropertyGroup>
+    <!-- Steam 默认路径，如果不对请修改下面这行 -->
+    <SephiriaGamePath>I:\SteamLibrary\steamapps\common\Sephiria</SephiriaGamePath>
+  </PropertyGroup>
+</Project>

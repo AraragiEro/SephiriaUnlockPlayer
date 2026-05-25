@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 导入游戏路径配置（可手动编辑 GamePath.props） -->
+  <Import Project="GamePath.props" Condition="Exists('GamePath.props')" />
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>SephiriaUnlocker</AssemblyName>
+    <RootNamespace>SephiriaUnlocker</RootNamespace>
+    <!-- 默认游戏路径（如果 GamePath.props 不存在） -->
+    <SephiriaGamePath Condition="'$(SephiriaGamePath)' == ''">I:\SteamLibrary\steamapps\common\Sephiria</SephiriaGamePath>
+    <GameManagedPath>$(SephiriaGamePath)\Sephiria_Data\Managed</GameManagedPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>..\libs\0Harmony.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameManagedPath)\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mirror">
+      <HintPath>$(GameManagedPath)\Mirror.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameManagedPath)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

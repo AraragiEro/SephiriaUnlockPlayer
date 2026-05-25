@@ -1,0 +1,6 @@
+﻿SephiriaUnlocker/bin/
+SephiriaUnlocker/obj/
+TestMod/
+.sisyphus/
+decompiled-*.txt
+*.zip
