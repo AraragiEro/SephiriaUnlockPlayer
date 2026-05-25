@@ -9,19 +9,56 @@ echo   一键编译 ^& 部署
 echo ============================================
 echo.
 
-:: ── 1. 自动检测游戏路径 ──────────────────────
+:: ── 1. 自动检测游戏路径 ──────────────────────────
 set GAME_PATH=
-for %%D in (I C D E F G) do (
-    if exist "%%D:\SteamLibrary\steamapps\common\Sephiria\Sephiria.exe" (
-        set GAME_PATH=%%D:\SteamLibrary\steamapps\common\Sephiria
-        goto :found
+set STEAM_PATH=
+
+:: 1a. Steam 注册表
+for /f "skip=2 tokens=2,*" %%A in ('reg query "HKCU\Software\Valve\Steam" /v SteamPath 2^>nul') do set "STEAM_PATH=%%B"
+if not defined STEAM_PATH (
+    for /f "skip=2 tokens=2,*" %%A in ('reg query "HKLM\SOFTWARE\WOW6432Node\Valve\Steam" /v InstallPath 2^>nul') do set "STEAM_PATH=%%B"
+)
+
+:: 1b. libraryfolders.vdf（通过 PowerShell 解析所有库文件夹）
+if defined STEAM_PATH (
+    if exist "!STEAM_PATH!\steamapps\libraryfolders.vdf" (
+        (
+            echo $steam = $env:STEAM_PATH
+            echo $vdf = "$steam\steamapps\libraryfolders.vdf"
+            echo $v = Get-Content $vdf -Raw -EA 0
+            echo if ($v^) {
+            echo   foreach ($m in [regex]::Matches($v,'\x22path\x22\s+\x22([^\x22]+)\x22')^) {
+            echo     $l = $m.Groups[1].Value -replace '\\\\','\'
+            echo     $t = "$l\steamapps\common\Sephiria\Sephiria.exe"
+            echo     if (Test-Path $t^) { Write-Output $l; exit 0 }
+            echo   }
+            echo }
+            echo exit 1
+        ) > "%TEMP%\find_sephiria.ps1"
+
+        for /f "usebackq delims=" %%P in (`powershell -NoProfile -File "%TEMP%\find_sephiria.ps1"`) do (
+            set "GAME_PATH=%%P\steamapps\common\Sephiria"
+            del "%TEMP%\find_sephiria.ps1" 2>nul
+            goto :found
+        )
+        del "%TEMP%\find_sephiria.ps1" 2>nul
+    )
+    :: 也检查 Steam 自身安装目录
+    if not defined GAME_PATH (
+        if exist "!STEAM_PATH!\steamapps\common\Sephiria\Sephiria.exe" (
+            set "GAME_PATH=!STEAM_PATH!\steamapps\common\Sephiria"
+            goto :found
+        )
     )
 )
-:: 也检查默认 Steam 路径
-for %%D in (C D E F) do (
-    if exist "%%D:\Program Files (x86)\Steam\steamapps\common\Sephiria\Sephiria.exe" (
-        set GAME_PATH=%%D:\Program Files (x86)\Steam\steamapps\common\Sephiria
-        goto :found
+
+:: 1c. 兜底：全盘扫描
+for %%D in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
+    for %%P in ("%%D:\SteamLibrary\steamapps\common\Sephiria" "%%D:\Program Files (x86)\Steam\steamapps\common\Sephiria" "%%D:\Program Files\Steam\steamapps\common\Sephiria" "%%D:\Steam\steamapps\common\Sephiria") do (
+        if exist "%%~P\Sephiria.exe" (
+            set "GAME_PATH=%%~P"
+            goto :found
+        )
     )
 )
 

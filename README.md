@@ -1,5 +1,7 @@
 # SephiriaUnlocker 16人联机解锁
 
+> **适配游戏版本：Sephiria v0.12.0** | Mod 版本：v0.12.0
+
 将 Sephiria（赛菲莉亚）联机人数上限从 4 人提升到 16 人。游戏内可自由选择 2-16 人，无需配置文件，无需 BepInEx。
 
 ## 快速开始
@@ -12,7 +14,7 @@ cd SephiriaUnlocker
 脚本自动完成：检测游戏路径 → 获取 HarmonyX → 编译 → 部署。
 
 **无需手动下载依赖 DLL。** 脚本会自动从以下来源获取 `0Harmony.dll`：
-1. 优先从已安装的 SephiriaReconnect 获取（同版本，避免冲突）
+1. 优先从已安装的 [SephiriaReconnect](https://github.com/icecubees/SephiriaReconnect) 获取（同版本，避免冲突）
 2. 否则从 NuGet 下载 HarmonyX v2.16.1（独立版，无需其他依赖）
 
 如果自动检测游戏路径失败，编辑 `GamePath.props` 或使用 `-GamePath` 参数指定。
@@ -27,7 +29,7 @@ cd SephiriaUnlocker
 | `SephiriaUnlocker.dll` | 主 Mod（编译产出） |
 | `0Harmony.dll` | HarmonyX 运行时（脚本自动获取） |
 
-> 如果你也安装了 SephiriaReconnect，仅需 `SephiriaUnlocker.dll` + `metadata.json` 即可——两个 Mod 共用同一个 `0Harmony.dll`。
+> 如果你也安装了 [SephiriaReconnect](https://github.com/icecubees/SephiriaReconnect)，仅需 `SephiriaUnlocker.dll` + `metadata.json` 即可——两个 Mod 共用同一个 `0Harmony.dll`。
 
 ## 配置
 
@@ -57,7 +59,7 @@ cd SephiriaUnlocker
    ```powershell
    Copy-Item bin\Release\netstandard2.1\SephiriaUnlocker.dll <游戏>\AddOns\SephiriaUnlocker\ -Force
    ```
-4. 获取 `0Harmony.dll`（从已安装的 SephiriaReconnect 复制，或从 NuGet 下载 HarmonyX v2.16.1）
+4. 获取 `0Harmony.dll`（从已安装的 [SephiriaReconnect](https://github.com/icecubees/SephiriaReconnect) 复制，或从 NuGet 下载 HarmonyX v2.16.1）
 
 ### 依赖说明
 本项目唯一的外部依赖是 **HarmonyX**（`0Harmony.dll`），源码中**不包含**此文件。部署时由 `deploy.ps1` 自动获取。编译时从 `libs\0Harmony.dll` 引用——你可从任一来源复制一份到此目录。

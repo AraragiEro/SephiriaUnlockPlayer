@@ -10,27 +10,61 @@ Write-Host '=== SephiriaUnlocker 一键编译部署 ===' -ForegroundColor Cyan
 
 # ── 1. 确定游戏路径 ──────────────────────────
 if (-not $GamePath) {
-    # Try GamePath.props
-    $propsFile = "$ScriptDir\SephiriaUnlocker\GamePath.props"
+    # 1a. GamePath.props（手动配置优先）
+    $propsFile = Join-Path $ScriptDir 'GamePath.props'
     if (Test-Path $propsFile) {
         [xml]$props = Get-Content $propsFile
-        $GamePath = $props.Project.PropertyGroup.SephiriaGamePath
-    }
-}
-if (-not $GamePath -or -not (Test-Path "$GamePath\Sephiria.exe")) {
-    # Auto-detect
-    foreach ($drive in @('I','C','D','E','F','G')) {
-        $tryPath = "${drive}:\SteamLibrary\steamapps\common\Sephiria"
-        if (Test-Path "$tryPath\Sephiria.exe") { $GamePath = $tryPath; break }
-    }
-    if (-not $GamePath) {
-        foreach ($drive in @('C','D','E','F')) {
-            $tryPath = "${drive}:\Program Files (x86)\Steam\steamapps\common\Sephiria"
-            if (Test-Path "$tryPath\Sephiria.exe") { $GamePath = $tryPath; break }
+        $candidate = $props.Project.PropertyGroup.SephiriaGamePath
+        if ($candidate -and (Test-Path (Join-Path $candidate 'Sephiria.exe'))) {
+            $GamePath = $candidate
         }
     }
 }
-if (-not $GamePath) { Write-Host "[ERROR] 找不到游戏目录，请用 -GamePath 参数指定" -ForegroundColor Red; exit 1 }
+
+if (-not $GamePath) {
+    # 1b. Steam 注册表 + libraryfolders.vdf（覆盖所有自定义库文件夹）
+    $steamPath = $null
+    try { $steamPath = (Get-ItemProperty 'HKCU:\Software\Valve\Steam' -Name 'SteamPath' -EA Stop).SteamPath } catch {}
+    if (-not $steamPath) {
+        try { $steamPath = (Get-ItemProperty 'HKLM:\SOFTWARE\WOW6432Node\Valve\Steam' -Name 'InstallPath' -EA Stop).InstallPath } catch {}
+    }
+
+    if ($steamPath) {
+        $vdfPath = Join-Path $steamPath 'steamapps\libraryfolders.vdf'
+        if (Test-Path $vdfPath) {
+            $vdfContent = Get-Content $vdfPath -Raw
+            $libMatches = [regex]::Matches($vdfContent, '"path"\s+"([^"]+)"')
+            foreach ($m in $libMatches) {
+                $libPath = $m.Groups[1].Value -replace '\\\\', '\'
+                $tryPath = Join-Path $libPath 'steamapps\common\Sephiria'
+                if (Test-Path (Join-Path $tryPath 'Sephiria.exe')) { $GamePath = $tryPath; break }
+            }
+        }
+        if (-not $GamePath) {
+            $tryPath = Join-Path $steamPath 'steamapps\common\Sephiria'
+            if (Test-Path (Join-Path $tryPath 'Sephiria.exe')) { $GamePath = $tryPath }
+        }
+    }
+}
+
+if (-not $GamePath) {
+    # 1c. 兜底：扫描所有盘符的常见路径
+    $patterns = @(
+        '{0}:\SteamLibrary\steamapps\common\Sephiria',
+        '{0}:\Program Files (x86)\Steam\steamapps\common\Sephiria',
+        '{0}:\Program Files\Steam\steamapps\common\Sephiria',
+        '{0}:\Steam\steamapps\common\Sephiria'
+    )
+    $drives = (Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Used }).Name
+    :driveLoop foreach ($drive in $drives) {
+        foreach ($pattern in $patterns) {
+            $tryPath = $pattern -f $drive
+            if (Test-Path (Join-Path $tryPath 'Sephiria.exe')) { $GamePath = $tryPath; break driveLoop }
+        }
+    }
+}
+
+if (-not $GamePath) { Write-Host '[ERROR] 找不到游戏目录，请用 -GamePath 参数指定' -ForegroundColor Red; exit 1 }
 Write-Host "[OK] 游戏目录: $GamePath"
 
 $AddOnDir = "$GamePath\AddOns\SephiriaUnlocker"
@@ -94,7 +128,7 @@ Copy-Item $harmonySrc (Join-Path $libsDir '0Harmony.dll') -Force
 Write-Host "[OK] libs\0Harmony.dll"
 
 # 4c. metadata.json
-$meta = '{"modName":"SephiriaUnlocker","modVersion":"1.0.0","modAuthor":"SephiriaUnlocker Team","dllFile":"SephiriaUnlocker.dll","entryClass":"SephiriaUnlocker.SephiriaUnlockerMod"}'
+$meta = '{"modName":"SephiriaUnlocker","modVersion":"0.12.0","modAuthor":"SephiriaUnlocker Team","dllFile":"SephiriaUnlocker.dll","entryClass":"SephiriaUnlocker.SephiriaUnlockerMod"}'
 Set-Content -Path "$AddOnDir\metadata.json" -Value $meta -Encoding UTF8
 Write-Host "[OK] metadata.json"
 
